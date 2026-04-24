@@ -42,11 +42,11 @@ Each persona reads its paired skill at the start of every operation (single sour
 /claude-dev-team:init
 ```
 
-The first two add the marketplace and install the plugin; the third reloads the current session so the new content is callable without restarting Claude Code. The fourth (`/claude-dev-team:init`) creates user-level symlinks at `~/.claude/skills/<skill>/` pointing into the plugin install — required because the personified agents read their paired skills via that stable path. Idempotent; re-run after any `/plugin install` to keep the symlinks pointed at the current installed version.
+The first two add the marketplace and install the plugin; the third reloads the current session so the new content is callable without restarting Claude Code. The fourth (`/claude-dev-team:init`) creates 13 user-level symlinks — 5 agents at `~/.claude/agents/`, 6 skills at `~/.claude/skills/`, and 2 commands at `~/.claude/commands/` — all pointing into the plugin install. This serves two purposes: (1) it lets the personified agents read their paired skills via the stable `~/.claude/skills/<name>/SKILL.md` paths they hardcode, and (2) it makes the personas + commands accessible by short name (`hubert`, `/build`) in addition to the namespaced form (`claude-dev-team:hubert`, `/claude-dev-team:build`). Idempotent; re-run after any `/plugin install` to keep the symlinks pointed at the current installed version.
 
-To pull a newer version later, run `/plugin marketplace update jason-claude-dev-team`, then `/plugin install claude-dev-team@jason-claude-dev-team`, then `/reload-plugins`, then `/claude-dev-team:init` again.
+To pull a newer version later, **uninstall first then reinstall** (Claude Code's `/plugin install` skips already-installed plugins, so a vanilla rerun won't pick up upstream changes): `/plugin marketplace update jason-claude-dev-team`, `/plugin uninstall claude-dev-team@jason-claude-dev-team`, `/plugin install claude-dev-team@jason-claude-dev-team`, `/reload-plugins`, `/claude-dev-team:init`.
 
-To uninstall: run `/claude-dev-team:init --remove` (cleans up the skill symlinks), then `/plugin uninstall claude-dev-team@jason-claude-dev-team` and `/plugin marketplace remove jason-claude-dev-team` to fully remove the plugin and marketplace.
+To uninstall: run `/claude-dev-team:init --remove` (cleans up the 13 symlinks), then `/plugin uninstall claude-dev-team@jason-claude-dev-team` and `/plugin marketplace remove jason-claude-dev-team` to fully remove the plugin and marketplace.
 
 The install wires up the five agents, five paired skills (plus `browser-testing-with-devtools` as a dependency of Negev's browser surface), and the `/build`, `/test`, and `/init` slash commands. Invoke personas by name:
 
