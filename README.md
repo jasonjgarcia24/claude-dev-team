@@ -38,9 +38,12 @@ Each persona reads its paired skill at the start of every operation (single sour
 ```
 /plugin marketplace add jasonjgarcia24/claude-dev-team
 /plugin install claude-dev-team@jason-claude-dev-team
+/reload-plugins
 ```
 
-That wires up the five agents, five paired skills (plus `browser-testing-with-devtools` as a dependency of Negev's browser surface), and the `/build` and `/test` slash commands. Invoke personas by name:
+The first two add the marketplace and install the plugin; the third reloads the current session so the new content is callable without restarting Claude Code. To pull a newer version later, run `/plugin marketplace update jason-claude-dev-team` followed by `/plugin install claude-dev-team@jason-claude-dev-team` again.
+
+The install wires up the five agents, five paired skills (plus `browser-testing-with-devtools` as a dependency of Negev's browser surface), and the `/build` and `/test` slash commands. Invoke personas by name:
 
 ```
 Ask Hubert to commit the current diff as atomic commits.
