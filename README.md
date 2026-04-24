@@ -30,10 +30,12 @@ Each persona reads its paired skill at the start of every operation (single sour
 
 ---
 
-## Install
+## Quick Start
+
+> **Before you start:** this plugin runs entirely inside Claude Code — no API keys, OAuth, or external accounts required. Chrome DevTools MCP is optional (only needed if you invoke Negev on a browser surface). See [Requirements](#requirements).
 
 <details>
-<summary><b>Claude Code — Marketplace (recommended)</b></summary>
+<summary><b>Claude Code — Marketplace install (recommended)</b></summary>
 
 ```
 /plugin marketplace add jasonjgarcia24/claude-dev-team
@@ -44,11 +46,19 @@ Each persona reads its paired skill at the start of every operation (single sour
 
 The first two add the marketplace and install the plugin; the third reloads the current session so the new content is callable without restarting Claude Code. The fourth (`/claude-dev-team:init`) creates 13 user-level symlinks — 5 agents at `~/.claude/agents/`, 6 skills at `~/.claude/skills/`, and 2 commands at `~/.claude/commands/` — all pointing into the plugin install. This serves two purposes: (1) it lets the personified agents read their paired skills via the stable `~/.claude/skills/<name>/SKILL.md` paths they hardcode, and (2) it makes the personas + commands accessible by short name (`hubert`, `/build`) in addition to the namespaced form (`claude-dev-team:hubert`, `/claude-dev-team:build`). Idempotent; re-run after any `/plugin install` to keep the symlinks pointed at the current installed version.
 
-To pull a newer version later, **uninstall first then reinstall** (Claude Code's `/plugin install` skips already-installed plugins, so a vanilla rerun won't pick up upstream changes): `/plugin marketplace update jason-claude-dev-team`, `/plugin uninstall claude-dev-team@jason-claude-dev-team`, `/plugin install claude-dev-team@jason-claude-dev-team`, `/reload-plugins`, `/claude-dev-team:init`.
+To pull a newer version later: **uninstall first then reinstall** (Claude Code's `/plugin install` skips already-installed plugins, so a vanilla rerun won't pick up upstream changes):
 
-To uninstall: run `/claude-dev-team:init --remove` (cleans up the 13 symlinks), then `/plugin uninstall claude-dev-team@jason-claude-dev-team` and `/plugin marketplace remove jason-claude-dev-team` to fully remove the plugin and marketplace.
+```
+/plugin marketplace update jason-claude-dev-team
+/plugin uninstall claude-dev-team@jason-claude-dev-team
+/plugin install claude-dev-team@jason-claude-dev-team
+/reload-plugins
+/claude-dev-team:init
+```
 
-The install wires up the five agents, five paired skills (plus `browser-testing-with-devtools` as a dependency of Negev's browser surface), and the `/build`, `/test`, and `/init` slash commands. Invoke personas by name:
+> **Two ways to invoke each persona and command.** `claude-dev-team:hubert` / `/claude-dev-team:build` are the plugin-namespaced forms (always available after install — Claude Code namespaces plugin content as `<plugin-name>:<name>` to avoid collisions). `hubert` / `/build` are the short forms — during `/claude-dev-team:init`, user-level symlinks are installed at `~/.claude/agents/<persona>.md` and `~/.claude/commands/<command>.md` pointing at the plugin's files, so both resolve to the same content with no drift. (Init itself stays namespaced — `/claude-dev-team:init` only — because Claude Code has a built-in `/init` command for CLAUDE.md initialization that the short form would collide with.)
+
+The install wires up the five agents, five paired skills (plus `browser-testing-with-devtools` as a dependency of Negev's browser surface), and the `/build` and `/test` slash commands. Invoke personas by name:
 
 ```
 Ask Hubert to commit the current diff as atomic commits.
@@ -62,6 +72,35 @@ Negev: run acceptance on the checkout flow at MVP depth.
 > ```bash
 > git config --global url."https://github.com/".insteadOf "git@github.com:"
 > ```
+
+</details>
+
+<details>
+<summary><b>Uninstall</b></summary>
+
+Three steps. The first cleans up the user-level shims init created; the next two remove the plugin and marketplace.
+
+```
+/claude-dev-team:init --remove
+/plugin uninstall claude-dev-team@jason-claude-dev-team
+/plugin marketplace remove jason-claude-dev-team
+```
+
+**`--remove` removes** (only if they exist and point at `claude-dev-team` paths):
+
+- 5 agent symlinks at `~/.claude/agents/{git-workflow,code-reviewer,security-auditor,test-engineer,acceptance-explorer}.md`
+- 6 skill symlinks at `~/.claude/skills/{git-workflow-and-versioning,code-review-and-quality,security-and-hardening,test-driven-development,acceptance-exploration,browser-testing-with-devtools}`
+- 2 command symlinks at `~/.claude/commands/{build,test}.md`
+
+Symlinks pointing elsewhere (e.g., from another bundle or a manual install you did yourself) are left alone — `--remove` verifies the target contains `claude-dev-team` before deleting.
+
+**`--remove` does NOT touch** — this plugin doesn't create sensitive state, so there's nothing extra to clean up. Specifically:
+
+- No `~/.config/claude-dev-team/` — the plugin has no config or credentials on disk.
+- No entries in `~/.claude/settings.json` — the plugin ships no `settings.fragment.json`, so nothing is merged into your settings.
+- No external state (no OAuth tokens, no remote account links, no external service state).
+
+Running the three commands above is a complete uninstall — no manual cleanup needed.
 
 </details>
 
