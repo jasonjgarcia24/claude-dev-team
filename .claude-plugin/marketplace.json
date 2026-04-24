@@ -1,0 +1,19 @@
+{
+  "name": "jason-claude-dev-team",
+  "owner": {
+    "name": "Jason J. Garcia"
+  },
+  "metadata": {
+    "description": "A Claude Code plugin bundling five engineering personas (Hubert, Watson, Barb, Pepper, Negev) and their paired workflow skills — each persona owns a narrow slice of the software delivery loop."
+  },
+  "plugins": [
+    {
+      "name": "claude-dev-team",
+      "source": {
+        "source": "github",
+        "repo": "jasonjgarcia24/claude-dev-team"
+      },
+      "description": "Commit hygiene (Hubert), code review (Watson), security audit (Barb), test authoring (Pepper), acceptance exploration (Negev) — five personas, five paired skills, skill-creator-compliant."
+    }
+  ]
+}
