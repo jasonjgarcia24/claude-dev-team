@@ -161,7 +161,7 @@ Report the command output as-is. If `created < 6`, surface the warning lines ver
 
 # Cleanup mode (`--remove`)
 
-Remove the 6 skill symlinks that setup mode creates, and print guidance for fully uninstalling the plugin.
+Remove the 13 symlinks that setup mode creates (5 agents + 6 skills + 2 commands), and print guidance for fully uninstalling the plugin.
 
 ## What it does
 
