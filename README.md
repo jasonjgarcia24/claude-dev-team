@@ -46,6 +46,8 @@ The first two add the marketplace and install the plugin; the third reloads the 
 
 To pull a newer version later, run `/plugin marketplace update jason-claude-dev-team`, then `/plugin install claude-dev-team@jason-claude-dev-team`, then `/reload-plugins`, then `/claude-dev-team:init` again.
 
+To uninstall: run `/claude-dev-team:init --remove` (cleans up the skill symlinks), then `/plugin uninstall claude-dev-team@jason-claude-dev-team` and `/plugin marketplace remove jason-claude-dev-team` to fully remove the plugin and marketplace.
+
 The install wires up the five agents, five paired skills (plus `browser-testing-with-devtools` as a dependency of Negev's browser surface), and the `/build`, `/test`, and `/init` slash commands. Invoke personas by name:
 
 ```
