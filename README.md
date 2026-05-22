@@ -58,7 +58,7 @@ To pull a newer version later: **uninstall first then reinstall** (Claude Code's
 
 > **Two ways to invoke each persona and command.** `claude-dev-team:hubert` / `/claude-dev-team:build` are the plugin-namespaced forms (always available after install — Claude Code namespaces plugin content as `<plugin-name>:<name>` to avoid collisions). `hubert` / `/build` are the short forms — during `/claude-dev-team:init`, user-level symlinks are installed at `~/.claude/agents/<persona>.md` and `~/.claude/commands/<command>.md` pointing at the plugin's files, so both resolve to the same content with no drift. (Init itself stays namespaced — `/claude-dev-team:init` only — because Claude Code has a built-in `/init` command for CLAUDE.md initialization that the short form would collide with.)
 
-The install wires up the five agents, five paired skills (plus `browser-testing-with-devtools` as a dependency of Negev's browser surface), and the `/build` and `/test` slash commands. Invoke personas by name:
+The install wires up the five agents, five paired skills, two depth-delegation skills (`browser-testing-with-devtools` for Negev's browser surface, `performance-optimization` for Watson's perf-axis depth), and the `/build` and `/test` slash commands. Invoke personas by name:
 
 ```
 Ask Hubert to commit the current diff as atomic commits.
@@ -89,7 +89,7 @@ Three steps. The first cleans up the user-level shims init created; the next two
 **`--remove` removes** (only if they exist and point at `claude-dev-team` paths):
 
 - 5 agent symlinks at `~/.claude/agents/{git-workflow,code-reviewer,security-auditor,test-engineer,acceptance-explorer}.md`
-- 6 skill symlinks at `~/.claude/skills/{git-workflow-and-versioning,code-review-and-quality,security-and-hardening,test-driven-development,acceptance-exploration,browser-testing-with-devtools}`
+- 7 skill symlinks at `~/.claude/skills/{git-workflow-and-versioning,code-review-and-quality,security-and-hardening,test-driven-development,acceptance-exploration,browser-testing-with-devtools,performance-optimization}`
 - 2 command symlinks at `~/.claude/commands/{build,test}.md`
 
 Symlinks pointing elsewhere (e.g., from another bundle or a manual install you did yourself) are left alone — `--remove` verifies the target contains `claude-dev-team` before deleting.
@@ -131,10 +131,11 @@ for agent in git-workflow code-reviewer security-auditor test-engineer acceptanc
   ln -sf "$PWD/agents/$agent.md" "$HOME/.claude/agents/$agent.md"
 done
 
-# 5 personified skills + 1 dependency (browser-testing-with-devtools)
+# 5 personified skills + 2 depth-delegation skills (browser-testing-with-devtools, performance-optimization)
 mkdir -p ~/.claude/skills
 for skill in git-workflow-and-versioning code-review-and-quality security-and-hardening \
-             test-driven-development acceptance-exploration browser-testing-with-devtools; do
+             test-driven-development acceptance-exploration browser-testing-with-devtools \
+             performance-optimization; do
   ln -sf "$PWD/skills/$skill" "$HOME/.claude/skills/$skill"
 done
 
@@ -201,6 +202,8 @@ claude-dev-team/
 │   ├── git-workflow-and-versioning/
 │   │   ├── SKILL.md
 │   │   └── references/        (worktrees, debugging-with-git)
+│   ├── performance-optimization/   (depth delegation from code-review-and-quality)
+│   │   └── SKILL.md
 │   ├── security-and-hardening/
 │   │   ├── SKILL.md
 │   │   └── references/        (owasp-patterns, operational-security, checklist)

@@ -1,7 +1,7 @@
 {
   "name": "claude-dev-team",
   "description": "Five AI engineering personas (Hubert, Watson, Barb, Pepper, Negev) and their paired workflow skills — commit hygiene, code review, security audit, test authoring, acceptance exploration. Skill-creator-compliant.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Jason J. Garcia"
   },

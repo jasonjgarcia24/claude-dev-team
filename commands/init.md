@@ -8,8 +8,8 @@ Two modes, dispatched by flag.
 
 | Flag | Mode | What it does |
 |------|------|--------------|
-| (none) | **Setup** | Discover plugin install path, create user-level symlinks for 5 agents, 6 skills, and 2 commands. |
-| `--remove` | **Cleanup** | Remove the 13 symlinks created by setup mode. Print `/plugin uninstall` and `/plugin marketplace remove` commands for the user to run if they want to fully uninstall. |
+| (none) | **Setup** | Discover plugin install path, create user-level symlinks for 5 agents, 7 skills, and 2 commands. |
+| `--remove` | **Cleanup** | Remove the 14 symlinks created by setup mode. Print `/plugin uninstall` and `/plugin marketplace remove` commands for the user to run if they want to fully uninstall. |
 
 Both modes are idempotent — safe to re-run.
 
@@ -41,7 +41,7 @@ Create the user-level symlinks that expose claude-dev-team's agents, skills, and
 
 ## What it creates
 
-13 symlinks total — 5 agents + 6 skills + 2 commands, all pointing into `<plugin-root>`:
+14 symlinks total — 5 agents + 7 skills + 2 commands, all pointing into `<plugin-root>`:
 
 | Category | Symlink at | Points to |
 |---|---|---|
@@ -56,6 +56,7 @@ Create the user-level symlinks that expose claude-dev-team's agents, skills, and
 | Skill | `~/.claude/skills/test-driven-development` | `<plugin-root>/skills/test-driven-development` |
 | Skill | `~/.claude/skills/acceptance-exploration` | `<plugin-root>/skills/acceptance-exploration` |
 | Skill | `~/.claude/skills/browser-testing-with-devtools` | `<plugin-root>/skills/browser-testing-with-devtools` |
+| Skill | `~/.claude/skills/performance-optimization` | `<plugin-root>/skills/performance-optimization` |
 | Command | `~/.claude/commands/build.md` | `<plugin-root>/commands/build.md` |
 | Command | `~/.claude/commands/test.md` | `<plugin-root>/commands/test.md` |
 
@@ -117,7 +118,8 @@ done
 echo ""
 echo "Skills:"
 for s in git-workflow-and-versioning code-review-and-quality security-and-hardening \
-         test-driven-development acceptance-exploration browser-testing-with-devtools; do
+         test-driven-development acceptance-exploration browser-testing-with-devtools \
+         performance-optimization; do
   src="$PLUGIN_ROOT/skills/$s"
   dst="$HOME/.claude/skills/$s"
   if [ ! -d "$src" ]; then
@@ -161,11 +163,11 @@ Report the command output as-is. If `created < 6`, surface the warning lines ver
 
 # Cleanup mode (`--remove`)
 
-Remove the 13 symlinks that setup mode creates (5 agents + 6 skills + 2 commands), and print guidance for fully uninstalling the plugin.
+Remove the 14 symlinks that setup mode creates (5 agents + 7 skills + 2 commands), and print guidance for fully uninstalling the plugin.
 
 ## What it does
 
-1. Removes the 13 symlinks at `~/.claude/agents/`, `~/.claude/skills/`, and `~/.claude/commands/` — but **only if** they point at a `claude-dev-team` location. Symlinks pointing elsewhere (e.g., user-managed or from another bundle with the same name) are left alone.
+1. Removes the 14 symlinks at `~/.claude/agents/`, `~/.claude/skills/`, and `~/.claude/commands/` — but **only if** they point at a `claude-dev-team` location. Symlinks pointing elsewhere (e.g., user-managed or from another bundle with the same name) are left alone.
 2. Prints `/plugin uninstall` and `/plugin marketplace remove` commands for the user to run if they want to fully remove the plugin.
 
 This command does NOT actually invoke `/plugin uninstall` itself — that's a Claude Code slash command, not a Bash command, and it must be invoked by the user. Cleanup mode only handles the file-system symlink removal; full plugin teardown requires the two slash commands at the end.
@@ -209,7 +211,8 @@ done
 echo ""
 echo "Skills:"
 for s in git-workflow-and-versioning code-review-and-quality security-and-hardening \
-         test-driven-development acceptance-exploration browser-testing-with-devtools; do
+         test-driven-development acceptance-exploration browser-testing-with-devtools \
+         performance-optimization; do
   remove_symlink "$HOME/.claude/skills/$s" "skills/$s"
 done
 
