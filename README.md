@@ -178,6 +178,265 @@ Result lines are the contract between the persona and the calling agent — they
 
 ---
 
+## Architecture & dependencies
+
+The five personas form a star graph around their paired skills, with two cross-skill depth delegations (`browser-testing-with-devtools` and `performance-optimization`) and two external runtime dependencies (`git`, Chrome DevTools MCP).
+
+### Plugin-wide dependency map
+
+```mermaid
+graph LR
+    %% Personas
+    subgraph DT["claude-dev-team personas"]
+        H[hubert<br/>git-workflow.md]
+        W[watson<br/>code-reviewer.md]
+        B[barb<br/>security-auditor.md]
+        P[pepper<br/>test-engineer.md]
+        N[negev<br/>acceptance-explorer.md]
+    end
+
+    %% Paired skills — hard "reads at start" dependency
+    subgraph SK["Paired skills (~/.claude/skills/)"]
+        sGWV[git-workflow-and-versioning]
+        sCRQ[code-review-and-quality]
+        sSH[security-and-hardening]
+        sTDD[test-driven-development]
+        sAE[acceptance-exploration]
+    end
+
+    %% Depth-delegation skills — referenced by other skills, not personas directly
+    subgraph DD["Depth-delegation skills"]
+        sBTD[browser-testing-with-devtools]
+        sPO[performance-optimization]
+    end
+
+    %% External CLIs / MCPs
+    subgraph EXT["External CLIs / MCPs"]
+        cGit[git]
+        cCDP[Chrome DevTools MCP]
+    end
+
+    %% Hard edges
+    H -->|reads at start| sGWV
+    W -->|reads at start| sCRQ
+    B -->|reads at start| sSH
+    P -->|reads at start| sTDD
+    N -->|reads at start| sAE
+
+    %% Skill-to-skill depth delegations (documentation, not runtime)
+    sCRQ -.->|delegates depth to| sPO
+    sAE -.->|references| sBTD
+    sTDD -.->|combines with| sBTD
+
+    %% Runtime shellouts
+    H ==> cGit
+    N ==> cCDP
+
+    classDef persona fill:#fce7f3,stroke:#ec4899,color:#000
+    classDef skill fill:#dbeafe,stroke:#3b82f6,color:#000
+    classDef depthskill fill:#e0f2fe,stroke:#0284c7,color:#000
+    classDef cli fill:#dcfce7,stroke:#16a34a,color:#000
+
+    class H,W,B,P,N persona
+    class sGWV,sCRQ,sSH,sTDD,sAE skill
+    class sBTD,sPO depthskill
+    class cGit,cCDP cli
+```
+
+**Legend:**
+- Solid arrow `-->` — hard "reads at start" dependency (persona loads paired skill every operation)
+- Thick arrow `==>` — runtime shellout to external CLI / MCP
+- Dotted arrow `-.->` — skill-to-skill depth reference (documentation, not a runtime call)
+
+**Key patterns:**
+- **1:1 persona ↔ skill pairing** across all five personas. Each persona's first read is its paired `SKILL.md` — that's a hard load every operation, not a recommendation.
+- **Two depth-delegation skills** (`browser-testing-with-devtools`, `performance-optimization`) are not directly paired with any persona — they're referenced by other skills when extra depth is needed. They ship with the plugin so the references resolve, but the personas don't read them at start.
+- **All shellouts go through Bash** — no persona uses a custom tool. Project-level Bash permission rules in `.claude/settings.json` are the actual gate.
+
+### Per-persona dependency maps
+
+Each persona's individual graph, including documented handoffs to siblings. Handoff edges are dotted because they're documentation, not runtime calls — the orchestrating Claude session dispatches.
+
+<details>
+<summary><b>hubert (git-workflow)</b> — Bash, Read, Grep, Glob · result line <i>first</i> (anomaly)</summary>
+
+```mermaid
+graph LR
+    SK[git-workflow-and-versioning<br/>SKILL.md]
+    H((hubert))
+    W((watson))
+    git[git CLI]
+
+    SK ==>|reads at start| H
+    H ==>|shells out| git
+    SK -.->|skill refs| CRQ[code-review-and-quality<br/>for split-change strategy]
+    H -.->|hand off:<br/>code quality questions| W
+
+    classDef persona fill:#fce7f3,stroke:#ec4899,color:#000
+    classDef skill fill:#dbeafe,stroke:#3b82f6,color:#000
+    classDef cli fill:#dcfce7,stroke:#16a34a,color:#000
+    classDef handoff fill:#fef3c7,stroke:#f59e0b,color:#000
+    class H persona
+    class W handoff
+    class SK,CRQ skill
+    class git cli
+```
+
+**What hubert can't do:** code-quality review (→ watson), security audit (→ barb), test writing (→ pepper), acceptance verification (→ negev), pushing/PR creation (out of scope entirely — refuses).
+
+</details>
+
+<details>
+<summary><b>watson (code-reviewer)</b> — Bash, Read, Grep, Glob · result line <i>last</i></summary>
+
+```mermaid
+graph LR
+    SK[code-review-and-quality<br/>SKILL.md]
+    W((watson))
+    git[git diff / log]
+
+    SK ==>|reads at start| W
+    W ==>|inspects via| git
+
+    SK -.->|delegates depth to| SH[security-and-hardening]
+    SK -.->|delegates depth to| PO[performance-optimization]
+    SK -.->|delegates depth to| TDD[test-driven-development]
+    SK -.->|delegates depth to| GWV[git-workflow-and-versioning]
+    SK -.->|delegates depth to| AE[acceptance-exploration]
+
+    W -.->|hand off:<br/>deep security| B((barb))
+    W -.->|hand off:<br/>test design| P((pepper))
+    W -.->|hand off:<br/>running feature| N((negev))
+    W -.->|hand off:<br/>commit hygiene| H((hubert))
+
+    classDef persona fill:#fce7f3,stroke:#ec4899,color:#000
+    classDef skill fill:#dbeafe,stroke:#3b82f6,color:#000
+    classDef cli fill:#dcfce7,stroke:#16a34a,color:#000
+    classDef handoff fill:#fef3c7,stroke:#f59e0b,color:#000
+    class W persona
+    class H,B,P,N handoff
+    class SK,SH,PO,TDD,GWV,AE skill
+    class git cli
+```
+
+**Watson is the densest hub** — its paired skill explicitly delegates each of the 5 review axes to a specific sibling skill, and the persona names all 4 other personas as out-of-scope handoffs. It's the central node of the dev-team graph.
+
+</details>
+
+<details>
+<summary><b>barb (security-auditor)</b> — Bash, Read, Grep, Glob · result line <i>last</i></summary>
+
+```mermaid
+graph LR
+    SK[security-and-hardening<br/>SKILL.md]
+    B((barb))
+    Scan[npm audit /<br/>dependency scanners]
+
+    SK ==>|reads at start| B
+    B ==>|runs| Scan
+
+    B -.->|hand off:<br/>writing security tests| P((pepper))
+    B -.->|hand off:<br/>general code quality| W((watson))
+    B -.->|hand off:<br/>verifying running feature| N((negev))
+    B -.->|hand off:<br/>commit-time secret scan| H((hubert))
+
+    classDef persona fill:#fce7f3,stroke:#ec4899,color:#000
+    classDef skill fill:#dbeafe,stroke:#3b82f6,color:#000
+    classDef cli fill:#dcfce7,stroke:#16a34a,color:#000
+    classDef handoff fill:#fef3c7,stroke:#f59e0b,color:#000
+    class B persona
+    class H,W,P,N handoff
+    class SK skill
+    class Scan cli
+```
+
+**Distinction worth knowing:** Barb audits *built* code for vulnerabilities (post-hoc). The `security-and-hardening` skill is for hardening *during* development. Different lifecycle stages; same paired skill file.
+
+</details>
+
+<details>
+<summary><b>pepper (test-engineer)</b> — Bash, Read, Edit, Write, Grep, Glob · only persona with Edit/Write · result line <i>last</i></summary>
+
+```mermaid
+graph LR
+    SK[test-driven-development<br/>SKILL.md]
+    P((pepper))
+    Runner[project test runner]
+    Files[test files<br/>on disk]
+
+    SK ==>|reads at start| P
+    P ==>|runs| Runner
+    P ==>|writes via Edit/Write| Files
+
+    SK -.->|combines with| BTD[browser-testing-with-devtools<br/>for browser-based work]
+
+    P -.->|hand off:<br/>implementing fix| W((watson))
+    P -.->|hand off:<br/>end-to-end verify| N((negev))
+    P -.->|hand off:<br/>security-only tests| B((barb))
+    P -.->|hand off:<br/>commit the tests| H((hubert))
+
+    classDef persona fill:#fce7f3,stroke:#ec4899,color:#000
+    classDef skill fill:#dbeafe,stroke:#3b82f6,color:#000
+    classDef cli fill:#dcfce7,stroke:#16a34a,color:#000
+    classDef handoff fill:#fef3c7,stroke:#f59e0b,color:#000
+    class P persona
+    class H,W,B,N handoff
+    class SK,BTD skill
+    class Runner,Files cli
+```
+
+**Pepper is unique** — only persona with `Edit, Write` in its toolset. The other four personas are read-only by design. Pepper writes tests; the fix that makes them pass is handed off to whoever is implementing.
+
+</details>
+
+<details>
+<summary><b>negev (acceptance-explorer)</b> — Bash, Read, Grep, Glob · result line <i>last</i></summary>
+
+```mermaid
+graph LR
+    SK[acceptance-exploration<br/>SKILL.md]
+    N((negev))
+    CDP[Chrome DevTools MCP]
+
+    SK ==>|reads at start| N
+    N ==>|drives browser via| CDP
+
+    SK -.->|references| BTD[browser-testing-with-devtools<br/>for runtime tooling]
+    SK -.->|redirect: not me| TDD[test-driven-development<br/>→ pepper]
+    SK -.->|redirect: not me| CRQ[code-review-and-quality<br/>→ watson]
+    SK -.->|redirect: not me| SH[security-and-hardening<br/>→ barb]
+
+    N -.->|hand off:<br/>writing tests| P((pepper))
+    N -.->|hand off:<br/>code review| W((watson))
+    N -.->|hand off:<br/>security audit| B((barb))
+    N -.->|hand off:<br/>commit changes| H((hubert))
+
+    classDef persona fill:#fce7f3,stroke:#ec4899,color:#000
+    classDef skill fill:#dbeafe,stroke:#3b82f6,color:#000
+    classDef cli fill:#dcfce7,stroke:#16a34a,color:#000
+    classDef handoff fill:#fef3c7,stroke:#f59e0b,color:#000
+    class N persona
+    class H,W,P,B handoff
+    class SK,BTD,TDD,CRQ,SH skill
+    class CDP cli
+```
+
+**Required input:** lifecycle stage (`prototype` / `MVP` / `beta` / `GA`). Negev's probing depth differs dramatically by stage and the skill refuses to guess — pass the stage in the prompt to avoid the extra round trip.
+
+</details>
+
+### Cross-chart patterns
+
+Reading all five together reveals the plugin's architecture:
+
+1. **1:1 persona ↔ skill pairing** — every persona reads exactly one `SKILL.md` and is paired with no other.
+2. **Universal cross-handoff** — every persona names every other persona as out-of-scope. The graph is fully connected at the documentation layer, but no edge is a runtime call.
+3. **Watson is the architectural center** — its skill delegates depth on each of the 5 review axes to a specific sibling skill, and 4 of the 5 personas hand off code-quality work *to* Watson. Watson is the "general reviewer" and the others are "deep specialists."
+4. **Read-only by default; only Pepper writes** — 4 of 5 personas have no `Edit`/`Write` in their toolset. They report and recommend; the orchestrating Claude session (or another persona) applies the change.
+5. **Result-line position is inconsistent** — Hubert puts its result line **first**; Watson/Barb/Pepper/Negev put theirs **last**. Either position is fine on its own, but a caller scripting around the output needs to know which persona it's parsing.
+
+---
+
 ## Project structure
 
 ```
